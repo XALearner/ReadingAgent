@@ -34,17 +34,19 @@ spring:
       elasticsearch:
         initialize-schema: true
         index-name: ${ES_INDEX:reading_chunks}
-        dimensions: ${EMBEDDING_DIMENSIONS:1536}
+        dimensions: ${EMBEDDING_DIMENSIONS:1024}
         similarity: cosine
     openai:
+      base-url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
       chat:
         enabled: ${AI_ENABLED:false}
         options:
-          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+          model: ${QWEN_MODEL:qwen-plus}
       embedding:
         enabled: ${AI_ENABLED:false}
         options:
-          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+          model: ${QWEN_EMBEDDING_MODEL:text-embedding-v3}
+          dimensions: ${EMBEDDING_DIMENSIONS:1024}
       audio:
         speech:
           enabled: false
@@ -54,7 +56,7 @@ spring:
         enabled: false
       moderation:
         enabled: false
-      api-key: ${OPENAI_API_KEY:}
+      api-key: ${DASHSCOPE_API_KEY:}
 
 elasticsearch:
   uris: ${ELASTICSEARCH_URIS:http://localhost:9200}

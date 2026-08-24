@@ -14,7 +14,7 @@
 
 ## 本地启动
 
-后端默认使用 H2 内存数据库，方便先跑通普通接口。AI 问答需要 Elasticsearch 和 `OPENAI_API_KEY`。
+后端默认使用 H2 内存数据库，方便先跑通普通接口。AI 问答需要 Elasticsearch 和 `DASHSCOPE_API_KEY`。
 
 ```bash
 cd backend
@@ -34,7 +34,11 @@ npm run dev
 在项目根目录创建 `.env`：
 
 ```env
-OPENAI_API_KEY=你的模型APIKey
+DASHSCOPE_API_KEY=你的DashScope API Key
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen-plus
+QWEN_EMBEDDING_MODEL=text-embedding-v3
+EMBEDDING_DIMENSIONS=1024
 AI_ENABLED=true
 AI_MODEL_CHAT=openai
 AI_MODEL_EMBEDDING=openai

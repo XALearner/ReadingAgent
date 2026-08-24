@@ -60,7 +60,7 @@ public class RagService {
         VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
         ChatClient.Builder chatBuilder = chatClientBuilderProvider.getIfAvailable();
         if (vectorStore == null || chatBuilder == null) {
-            return new AskResponse("AI 问答还没有配置完成：请确认 OPENAI_API_KEY 和 Elasticsearch 已启动。", List.of());
+            return new AskResponse("AI 问答还没有配置完成：请确认 DASHSCOPE_API_KEY 和 Elasticsearch 已启动。", List.of());
         }
 
         List<Document> matched = vectorStore.similaritySearch(SearchRequest.builder()

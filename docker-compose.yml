@@ -42,7 +42,11 @@ services:
       AI_MODEL_CHAT: ${AI_MODEL_CHAT:-openai}
       AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-openai}
       AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-elasticsearch}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      QWEN_MODEL: ${QWEN_MODEL:-qwen-plus}
+      QWEN_EMBEDDING_MODEL: ${QWEN_EMBEDDING_MODEL:-text-embedding-v3}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1024}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
     ports:
       - "8080:8080"
