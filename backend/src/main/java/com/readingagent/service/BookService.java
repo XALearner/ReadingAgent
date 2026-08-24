@@ -10,12 +10,16 @@ import com.readingagent.repository.BookRepository;
 import com.readingagent.repository.ChapterRepository;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class BookService {
+    private static final Logger log = LoggerFactory.getLogger(BookService.class);
+
     private final BookRepository bookRepository;
     private final ChapterRepository chapterRepository;
     private final BookParser bookParser;
@@ -51,7 +55,11 @@ public class BookService {
             chapters.add(chapter);
         }
         chapters = chapterRepository.saveAll(chapters);
-        ragService.indexBook(book, chapters);
+        try {
+            ragService.indexBook(book, chapters);
+        } catch (RuntimeException ex) {
+            log.warn("Book {} uploaded, but AI index creation failed", book.getId(), ex);
+        }
 
         return new UploadBookResponse(BookSummary.from(book), ChapterDetail.from(chapters.get(0)));
     }
