@@ -1,0 +1,65 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: reading-agent
+  datasource:
+    url: ${DB_URL:jdbc:h2:mem:reading_agent;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 30MB
+  ai:
+    model:
+      chat: ${AI_MODEL_CHAT:none}
+      embedding: ${AI_MODEL_EMBEDDING:none}
+      audio:
+        speech: none
+        transcription: none
+      image: none
+      moderation: none
+    vectorstore:
+      type: ${AI_VECTORSTORE_TYPE:none}
+      elasticsearch:
+        initialize-schema: true
+        index-name: ${ES_INDEX:reading_chunks}
+        dimensions: ${EMBEDDING_DIMENSIONS:1536}
+        similarity: cosine
+    openai:
+      chat:
+        enabled: ${AI_ENABLED:false}
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+      embedding:
+        enabled: ${AI_ENABLED:false}
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+      audio:
+        speech:
+          enabled: false
+        transcription:
+          enabled: false
+      image:
+        enabled: false
+      moderation:
+        enabled: false
+      api-key: ${OPENAI_API_KEY:}
+
+elasticsearch:
+  uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+
+app:
+  cors-origin: ${CORS_ORIGIN:http://localhost:5173}
+  chunk-size: ${BOOK_CHUNK_SIZE:900}
+  chunk-overlap: ${BOOK_CHUNK_OVERLAP:120}

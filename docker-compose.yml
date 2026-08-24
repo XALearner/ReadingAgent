@@ -1,0 +1,63 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: reading-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-reading_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-reading_agent}
+      MYSQL_USER: ${MYSQL_USER:-reading}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-reading_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: reading-elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: reading-backend
+    depends_on:
+      - mysql
+      - elasticsearch
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-reading_agent}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      DB_USERNAME: ${MYSQL_USER:-reading}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-reading_pass}
+      DB_DRIVER: com.mysql.cj.jdbc.Driver
+      ELASTICSEARCH_URIS: http://elasticsearch:9200
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_MODEL_CHAT: ${AI_MODEL_CHAT:-openai}
+      AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-openai}
+      AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-elasticsearch}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8080/api}
+    container_name: reading-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  mysql-data:
+  es-data:
