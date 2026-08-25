@@ -53,6 +53,7 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD:-reading_pass}
       DB_DRIVER: com.mysql.cj.jdbc.Driver
       ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       AI_ENABLED: ${AI_ENABLED:-true}
       AI_MODEL_CHAT: ${AI_MODEL_CHAT:-openai}
       AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-openai}
