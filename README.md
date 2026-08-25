@@ -66,6 +66,7 @@ AI_ENABLED=false
 AI_MODEL_CHAT=none
 AI_MODEL_EMBEDDING=none
 AI_VECTORSTORE_TYPE=none
+SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.ai.vectorstore.elasticsearch.autoconfigure.ElasticsearchVectorStoreAutoConfiguration
 ```
 
 当服务器内存足够、Elasticsearch 已正常启动并且 `DASHSCOPE_API_KEY` 已配置后，再把这些值改回 AI 配置。

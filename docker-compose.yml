@@ -49,6 +49,7 @@ services:
       AI_MODEL_CHAT: ${AI_MODEL_CHAT:-none}
       AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-none}
       AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-none}
+      SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.ai.vectorstore.elasticsearch.autoconfigure.ElasticsearchVectorStoreAutoConfiguration
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
       QWEN_MODEL: ${QWEN_MODEL:-qwen-plus}
