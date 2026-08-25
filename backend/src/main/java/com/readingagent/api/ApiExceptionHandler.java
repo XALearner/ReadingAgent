@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -30,6 +31,12 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
     public Map<String, String> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return Map.of("message", "文件太大，当前最大支持 100MB。");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNoResource(NoResourceFoundException ex) {
+        return Map.of("message", "接口不存在: " + ex.getResourcePath());
     }
 
     @ExceptionHandler(Exception.class)
