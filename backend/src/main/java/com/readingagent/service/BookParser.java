@@ -194,7 +194,7 @@ public class BookParser {
             String rawHtml = html.body() == null ? html.html() : html.body().html();
             String contentHtml = cleanEpubHtml(rawHtml);
             String content = normalizeText(html.body() == null ? html.text() : html.body().text());
-            if (!content.isBlank()) {
+            if (!content.isBlank() || !contentHtml.isBlank()) {
                 String chapterTitle = blankToDefault(html.title(), firstHeading(html));
                 chapters.add(new ParsedChapter(blankToDefault(chapterTitle, "章节 " + (chapters.size() + 1)),
                         content, contentHtml));
@@ -216,6 +216,33 @@ public class BookParser {
                 continue;
             }
             image.attr("src", "data:" + mimeType(imagePath) + ";base64," + Base64.getEncoder().encodeToString(imageBytes));
+        }
+        for (org.jsoup.nodes.Element image : html.select("image")) {
+            String href = blankToDefault(image.attr("href"), image.attr("xlink:href"));
+            if (href == null || href.isBlank() || href.startsWith("data:")
+                    || href.startsWith("http://") || href.startsWith("https://")) {
+                continue;
+            }
+            String imagePath = resolveZipPath(chapterBasePath, href);
+            byte[] imageBytes = entries.get(imagePath);
+            if (imageBytes == null) {
+                continue;
+            }
+            org.jsoup.nodes.Element img = new org.jsoup.nodes.Element("img")
+                    .attr("src", "data:" + mimeType(imagePath) + ";base64," + Base64.getEncoder().encodeToString(imageBytes))
+                    .attr("alt", image.attr("title"));
+            if (image.hasAttr("width")) {
+                img.attr("width", image.attr("width"));
+            }
+            if (image.hasAttr("height")) {
+                img.attr("height", image.attr("height"));
+            }
+            org.jsoup.nodes.Element svg = image.closest("svg");
+            if (svg != null) {
+                svg.replaceWith(img);
+            } else {
+                image.replaceWith(img);
+            }
         }
     }
 

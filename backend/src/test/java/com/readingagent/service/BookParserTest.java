@@ -40,10 +40,26 @@ class BookParserTest {
 
         assertThat(book.title()).isEqualTo("EPUB Title");
         assertThat(book.author()).isEqualTo("EPUB Author");
-        assertThat(book.chapters()).hasSize(1);
-        assertThat(book.chapters().get(0).title()).isEqualTo("Chapter One");
-        assertThat(book.chapters().get(0).content()).contains("Hello EPUB chapter");
-        assertThat(book.chapters().get(0).contentHtml()).contains("Hello EPUB chapter", "data:image/png;base64,");
+        assertThat(book.chapters()).hasSize(2);
+        assertThat(book.chapters().get(0).title()).isEqualTo("封面");
+        assertThat(book.chapters().get(0).content()).isBlank();
+        assertThat(book.chapters().get(0).contentHtml()).contains("data:image/png;base64,");
+        assertThat(book.chapters().get(1).title()).isEqualTo("Chapter One");
+        assertThat(book.chapters().get(1).content()).contains("Hello EPUB chapter");
+        assertThat(book.chapters().get(1).contentHtml()).contains("Hello EPUB chapter", "data:image/png;base64,");
+    }
+
+    @Test
+    void parsesEpubSvgCoverWithoutText() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "sample.epub", "application/epub+zip", sampleEpub());
+
+        BookParser.ParsedBook book = parser.parse(file, null, null);
+
+        assertThat(book.chapters()).hasSize(2);
+        assertThat(book.chapters().get(0).title()).isEqualTo("封面");
+        assertThat(book.chapters().get(0).content()).isBlank();
+        assertThat(book.chapters().get(0).contentHtml()).contains("data:image/png;base64,");
     }
 
     private byte[] samplePdf() throws Exception {
@@ -82,12 +98,29 @@ class BookParserTest {
                         <dc:creator>EPUB Author</dc:creator>
                       </metadata>
                       <manifest>
+                        <item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>
                         <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
                       </manifest>
                       <spine>
+                        <itemref idref="cover"/>
                         <itemref idref="chapter1"/>
                       </spine>
                     </package>
+                    """);
+            addZipEntry(zip, "OEBPS/cover.xhtml", """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <html xmlns="http://www.w3.org/1999/xhtml">
+                      <head><title>封面</title></head>
+                      <body>
+                        <figure class="cover">
+                          <svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+                               xmlns:xlink="http://www.w3.org/1999/xlink"
+                               width="100%" height="100%" viewBox="0 0 812 1200">
+                            <image width="812" height="1200" xlink:href="images/cover.png" />
+                          </svg>
+                        </figure>
+                      </body>
+                    </html>
                     """);
             addZipEntry(zip, "OEBPS/chapter1.xhtml", """
                     <?xml version="1.0" encoding="UTF-8"?>
