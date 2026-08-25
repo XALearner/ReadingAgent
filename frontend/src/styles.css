@@ -53,6 +53,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 100vh;
   overflow: hidden;
 }
 
@@ -425,6 +426,7 @@ article p {
 }
 
 .tool-block {
+  flex: 0 0 auto;
   min-height: 0;
 }
 
@@ -494,16 +496,21 @@ button:disabled {
 
 .ai-block {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-list {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .chat.user {
