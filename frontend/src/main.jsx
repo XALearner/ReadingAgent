@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, Trash2, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, Trash2, Upload } from 'lucide-react';
 import { api } from './api/client';
 import './styles.css';
 
@@ -77,9 +77,18 @@ function App() {
   async function openChapter(chapterId, bookId = activeBook?.id) {
     const chapter = await api.getChapter(chapterId);
     setActiveChapter(chapter);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (bookId) {
       api.saveProgress(bookId, { userKey: USER_KEY, chapterId, scrollPercent: 0 }).catch(() => {});
     }
+  }
+
+  async function goNextChapter() {
+    if (!nextChapter) {
+      return;
+    }
+    setError('');
+    await openChapter(nextChapter.id);
   }
 
   async function handleUpload(event) {
@@ -167,6 +176,14 @@ function App() {
     return Math.round(((index + 1) / chapters.length) * 100);
   }, [chapters, activeChapter]);
 
+  const nextChapter = useMemo(() => {
+    if (!chapters.length || !activeChapter) {
+      return null;
+    }
+    const index = chapters.findIndex((chapter) => chapter.id === activeChapter.id);
+    return index >= 0 && index + 1 < chapters.length ? chapters[index + 1] : null;
+  }, [chapters, activeChapter]);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -249,6 +266,22 @@ function App() {
                 ))
               )}
             </article>
+            <div className="chapter-nav">
+              {nextChapter ? (
+                <button className="next-chapter" onClick={goNextChapter}>
+                  <span>
+                    <strong>下一章</strong>
+                    <small>{nextChapter.title}</small>
+                  </span>
+                  <ArrowRight size={20} />
+                </button>
+              ) : (
+                <div className="book-finished">
+                  <strong>已读到最后一章</strong>
+                  <span>这本书已经到末尾了。</span>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <div className="welcome">

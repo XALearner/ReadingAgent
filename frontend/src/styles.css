@@ -230,6 +230,49 @@ article p {
   overflow-wrap: anywhere;
 }
 
+.chapter-nav {
+  margin: 18px auto 0;
+  max-width: 840px;
+}
+
+.next-chapter,
+.book-finished {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dfd7ca;
+  border-radius: 8px;
+  color: #223041;
+  display: flex;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 14px 16px;
+  width: 100%;
+}
+
+.next-chapter {
+  box-shadow: 0 8px 20px rgba(59, 48, 33, 0.06);
+}
+
+.next-chapter:hover {
+  border-color: #a9d2ce;
+  color: #256f6c;
+}
+
+.next-chapter strong,
+.book-finished strong {
+  display: block;
+  font-size: 15px;
+}
+
+.next-chapter small,
+.book-finished span {
+  color: #73808f;
+  display: block;
+  font-size: 13px;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
 .epub-content {
   overflow: hidden;
 }
