@@ -4,7 +4,7 @@
 
 ## 当前已实现
 
-- 上传 UTF-8 文本/Markdown 书籍
+- 上传 UTF-8 文本、Markdown、EPUB、PDF 书籍
 - 自动识别中文章节标题和 Markdown 标题
 - 书架、目录、章节阅读
 - 阅读进度接口
@@ -62,7 +62,7 @@ docker compose up -d --build
 ## 下一步建议
 
 - 增加用户注册登录和权限隔离
-- 接入 EPUB 解析
+- 优化 EPUB/PDF 目录识别和版式还原
 - RAG 检索改成 BM25 + 向量混合检索
 - AI 回答增加引用跳转到章节位置
 - 书籍文件和封面迁移到对象存储

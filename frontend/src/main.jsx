@@ -153,7 +153,7 @@ function App() {
         <label className="upload-button">
           {busy ? <Loader2 className="spin" size={18} /> : <Upload size={18} />}
           <span>导入书籍</span>
-          <input type="file" accept=".txt,.md,.markdown" onChange={handleUpload} />
+          <input type="file" accept=".txt,.md,.markdown,.epub,.pdf" onChange={handleUpload} />
         </label>
 
         <section className="panel">
@@ -169,7 +169,7 @@ function App() {
                 <span>{book.chapterCount} 章</span>
               </button>
             ))}
-            {books.length === 0 && <p className="empty">上传一本 UTF-8 文本书开始阅读。</p>}
+            {books.length === 0 && <p className="empty">上传一本 TXT、Markdown、EPUB 或 PDF 开始阅读。</p>}
           </div>
         </section>
 
@@ -210,7 +210,7 @@ function App() {
           <div className="welcome">
             <BookOpen size={44} />
             <h1>导入一本书，开始阅读</h1>
-            <p>当前版本支持 UTF-8 文本和 Markdown，后续可以继续接 EPUB/PDF 解析。</p>
+            <p>当前版本支持 UTF-8 文本、Markdown、EPUB 和 PDF。</p>
           </div>
         )}
       </main>
