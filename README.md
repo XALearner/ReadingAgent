@@ -59,6 +59,17 @@ docker compose up -d --build
 
 浏览器打开：`http://你的服务器IP`
 
+如果只想先启用上传、阅读、划线等基础功能，可以暂时不配置 AI：
+
+```env
+AI_ENABLED=false
+AI_MODEL_CHAT=none
+AI_MODEL_EMBEDDING=none
+AI_VECTORSTORE_TYPE=none
+```
+
+当服务器内存足够、Elasticsearch 已正常启动并且 `DASHSCOPE_API_KEY` 已配置后，再把这些值改回 AI 配置。
+
 ## 下一步建议
 
 - 增加用户注册登录和权限隔离
