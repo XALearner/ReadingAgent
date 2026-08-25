@@ -30,7 +30,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
     public Map<String, String> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
-        return Map.of("message", "文件太大，当前最大支持 100MB。");
+        return Map.of("message", "文件太大，当前最大支持 300MB。");
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
