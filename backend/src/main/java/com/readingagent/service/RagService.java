@@ -14,10 +14,15 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class RagService {
+    private static final Logger log = LoggerFactory.getLogger(RagService.class);
+
     private final ObjectProvider<VectorStore> vectorStoreProvider;
     private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
     private final Chunker chunker;
@@ -30,7 +35,16 @@ public class RagService {
         this.chunker = chunker;
     }
 
-    public void indexBook(Book book, List<Chapter> chapters) {
+    @Async
+    public void indexBookAsync(Book book, List<Chapter> chapters) {
+        try {
+            indexBook(book, chapters);
+        } catch (RuntimeException ex) {
+            log.warn("Book {} uploaded, but AI index creation failed", book.getId(), ex);
+        }
+    }
+
+    private void indexBook(Book book, List<Chapter> chapters) {
         VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
         if (vectorStore == null) {
             return;

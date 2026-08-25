@@ -153,7 +153,7 @@ function App() {
         <label className="upload-button">
           {busy ? <Loader2 className="spin" size={18} /> : <Upload size={18} />}
           <span>导入书籍</span>
-          <input type="file" accept=".txt,.md,.markdown,.epub,.pdf" onChange={handleUpload} />
+          <input type="file" accept=".txt,.md,.markdown,.epub,.pdf" onClick={() => setError('')} onChange={handleUpload} />
         </label>
 
         <section className="panel">
