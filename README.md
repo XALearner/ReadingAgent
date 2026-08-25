@@ -36,6 +36,8 @@ npm run dev
 ```env
 DASHSCOPE_API_KEY=你的DashScope API Key
 QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_CHAT_COMPLETIONS_PATH=/chat/completions
+QWEN_EMBEDDINGS_PATH=/embeddings
 QWEN_MODEL=qwen-plus
 QWEN_EMBEDDING_MODEL=text-embedding-v3
 EMBEDDING_DIMENSIONS=1024
@@ -72,6 +74,12 @@ SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.ai.vectorstore.elasticsearch.au
 ```
 
 当服务器内存足够、Elasticsearch 已正常启动并且 `DASHSCOPE_API_KEY` 已配置后，再把这些值改回 AI 配置。
+
+如果 AI 问答返回配置或调用失败，先检查后端容器里的关键环境变量：
+
+```bash
+docker compose exec backend printenv | grep -E "DASHSCOPE|QWEN|AI_|ELASTICSEARCH"
+```
 
 ## 下一步建议
 

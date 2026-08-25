@@ -60,6 +60,8 @@ services:
       AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-elasticsearch}
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      QWEN_CHAT_COMPLETIONS_PATH: ${QWEN_CHAT_COMPLETIONS_PATH:-/chat/completions}
+      QWEN_EMBEDDINGS_PATH: ${QWEN_EMBEDDINGS_PATH:-/embeddings}
       QWEN_MODEL: ${QWEN_MODEL:-qwen-plus}
       QWEN_EMBEDDING_MODEL: ${QWEN_EMBEDDING_MODEL:-text-embedding-v3}
       EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1024}

@@ -42,10 +42,12 @@ spring:
       base-url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
       chat:
         enabled: ${AI_ENABLED:false}
+        completions-path: ${QWEN_CHAT_COMPLETIONS_PATH:/chat/completions}
         options:
           model: ${QWEN_MODEL:qwen-plus}
       embedding:
         enabled: ${AI_ENABLED:false}
+        embeddings-path: ${QWEN_EMBEDDINGS_PATH:/embeddings}
         options:
           model: ${QWEN_EMBEDDING_MODEL:text-embedding-v3}
           dimensions: ${EMBEDDING_DIMENSIONS:1024}

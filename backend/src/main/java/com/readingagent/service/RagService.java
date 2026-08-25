@@ -77,10 +77,16 @@ public class RagService {
             return new AskResponse("AI 问答还没有配置完成：请确认 DASHSCOPE_API_KEY 和 Elasticsearch 已启动。", List.of());
         }
 
-        List<Document> matched = vectorStore.similaritySearch(SearchRequest.builder()
-                .query(question)
-                .topK(12)
-                .build());
+        List<Document> matched;
+        try {
+            matched = vectorStore.similaritySearch(SearchRequest.builder()
+                    .query(question)
+                    .topK(12)
+                    .build());
+        } catch (RuntimeException ex) {
+            log.warn("RAG retrieval failed for book {}", book.getId(), ex);
+            return new AskResponse("RAG 检索失败：请确认 Elasticsearch 正常、DashScope API Key 可用，并且 embedding 模型配置正确。", List.of());
+        }
 
         List<Document> bookDocs = matched.stream()
                 .filter(doc -> Objects.equals(String.valueOf(book.getId()), String.valueOf(doc.getMetadata().get("bookId"))))
@@ -103,23 +109,29 @@ public class RagService {
             sources.add(new SourceSnippet(book.getId(), chapterId, chapterTitle, doc.getText()));
         }
 
-        String answer = chatBuilder.build()
-                .prompt()
-                .system("""
-                        你是一个读书助手。只根据给定的书籍资料回答问题。
-                        如果资料不足，直接说明不足，不要编造。
-                        回答要清晰、简洁，并尽量指出依据来自哪个章节。
-                        """)
-                .user("""
-                        书名：%s
+        String answer;
+        try {
+            answer = chatBuilder.build()
+                    .prompt()
+                    .system("""
+                            你是一个读书助手。只根据给定的书籍资料回答问题。
+                            如果资料不足，直接说明不足，不要编造。
+                            回答要清晰、简洁，并尽量指出依据来自哪个章节。
+                            """)
+                    .user("""
+                            书名：%s
 
-                        资料：
-                        %s
+                            资料：
+                            %s
 
-                        用户问题：%s
-                        """.formatted(book.getTitle(), context, question))
-                .call()
-                .content();
+                            用户问题：%s
+                            """.formatted(book.getTitle(), context, question))
+                    .call()
+                    .content();
+        } catch (RuntimeException ex) {
+            log.warn("RAG chat completion failed for book {}", book.getId(), ex);
+            return new AskResponse("大模型调用失败：请确认 DASHSCOPE_API_KEY、QWEN_BASE_URL 和 QWEN_MODEL 配置正确，账号额度也仍然可用。", sources);
+        }
 
         return new AskResponse(answer, sources);
     }
