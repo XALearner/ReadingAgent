@@ -472,6 +472,7 @@ button:disabled {
 .note-item,
 .chat {
   border-radius: 8px;
+  flex: 0 0 auto;
   padding: 10px 12px;
 }
 
@@ -521,8 +522,10 @@ button:disabled {
 }
 
 .chat.assistant {
+  align-self: flex-start;
   background: #eef2f6;
   color: #223041;
+  max-width: 100%;
 }
 
 .sources {
