@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowRight, BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, Trash2, Upload } from 'lucide-react';
 import { api } from './api/client';
@@ -18,6 +18,8 @@ function App() {
   const [selectedText, setSelectedText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const readerRef = useRef(null);
+  const questionRef = useRef(null);
 
   useEffect(() => {
     refreshBooks();
@@ -77,7 +79,7 @@ function App() {
   async function openChapter(chapterId, bookId = activeBook?.id) {
     const chapter = await api.getChapter(chapterId);
     setActiveChapter(chapter);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    readerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     if (bookId) {
       api.saveProgress(bookId, { userKey: USER_KEY, chapterId, scrollPercent: 0 }).catch(() => {});
     }
@@ -149,6 +151,9 @@ function App() {
     }
     const userQuestion = question.trim();
     setQuestion('');
+    if (questionRef.current) {
+      questionRef.current.style.height = '42px';
+    }
     setMessages((items) => [...items, { role: 'user', content: userQuestion }]);
     setBusy(true);
     setError('');
@@ -165,6 +170,23 @@ function App() {
       setError(err.message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  function resizeQuestionBox(element) {
+    element.style.height = 'auto';
+    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
+  }
+
+  function handleQuestionChange(event) {
+    setQuestion(event.target.value);
+    resizeQuestionBox(event.target);
+  }
+
+  function handleQuestionKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
     }
   }
 
@@ -243,7 +265,7 @@ function App() {
         </section>
       </aside>
 
-      <main className="reader">
+      <main className="reader" ref={readerRef}>
         {error && <div className="error">{error}</div>}
         {activeChapter ? (
           <>
@@ -334,10 +356,13 @@ function App() {
             {messages.length === 0 && <p className="empty">可以问人物关系、概念解释、章节总结。</p>}
           </div>
           <form onSubmit={askAgent} className="ask-form">
-            <input
+            <textarea
+              ref={questionRef}
               value={question}
-              onChange={(event) => setQuestion(event.target.value)}
+              onChange={handleQuestionChange}
+              onKeyDown={handleQuestionKeyDown}
               placeholder="输入你的问题"
+              rows={1}
             />
             <button className="icon-button" disabled={busy || !question.trim()} title="发送">
               {busy ? <Loader2 className="spin" size={18} /> : <MessageCircle size={18} />}
