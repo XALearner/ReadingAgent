@@ -1,7 +1,12 @@
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, options);
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, options);
+  } catch (error) {
+    throw new Error(`无法连接后端服务：请确认 ${API_BASE} 可访问，且后端 CORS 配置允许当前前端地址。`);
+  }
   if (!response.ok) {
     let message = `请求失败：${response.status}`;
     try {
