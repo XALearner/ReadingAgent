@@ -8,6 +8,8 @@ import com.readingagent.dto.BookDtos.ChapterSummary;
 import com.readingagent.dto.BookDtos.UploadBookResponse;
 import com.readingagent.repository.BookRepository;
 import com.readingagent.repository.ChapterRepository;
+import com.readingagent.repository.HighlightRepository;
+import com.readingagent.repository.ReadingProgressRepository;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -18,13 +20,19 @@ import org.springframework.web.multipart.MultipartFile;
 public class BookService {
     private final BookRepository bookRepository;
     private final ChapterRepository chapterRepository;
+    private final HighlightRepository highlightRepository;
+    private final ReadingProgressRepository readingProgressRepository;
     private final BookParser bookParser;
     private final RagService ragService;
 
-    public BookService(BookRepository bookRepository, ChapterRepository chapterRepository, BookParser bookParser,
+    public BookService(BookRepository bookRepository, ChapterRepository chapterRepository,
+                       HighlightRepository highlightRepository, ReadingProgressRepository readingProgressRepository,
+                       BookParser bookParser,
                        RagService ragService) {
         this.bookRepository = bookRepository;
         this.chapterRepository = chapterRepository;
+        this.highlightRepository = highlightRepository;
+        this.readingProgressRepository = readingProgressRepository;
         this.bookParser = bookParser;
         this.ragService = ragService;
     }
@@ -48,6 +56,7 @@ public class BookService {
             chapter.setSortOrder(i + 1);
             chapter.setTitle(parsedChapter.title());
             chapter.setContent(parsedChapter.content());
+            chapter.setContentHtml(parsedChapter.contentHtml());
             chapters.add(chapter);
         }
         chapters = chapterRepository.saveAll(chapters);
@@ -79,5 +88,14 @@ public class BookService {
     public ChapterDetail getChapter(Long chapterId) {
         return ChapterDetail.from(chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("章节不存在")));
+    }
+
+    @Transactional
+    public void deleteBook(Long bookId) {
+        Book book = getBook(bookId);
+        readingProgressRepository.deleteByBookId(bookId);
+        highlightRepository.deleteByBookId(bookId);
+        chapterRepository.deleteByBookId(bookId);
+        bookRepository.delete(book);
     }
 }

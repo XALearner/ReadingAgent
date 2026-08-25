@@ -9,4 +9,6 @@ public interface ChapterRepository extends JpaRepository<Chapter, Long> {
     List<Chapter> findByBookIdOrderBySortOrderAsc(Long bookId);
 
     Optional<Chapter> findFirstByBookIdOrderBySortOrderAsc(Long bookId);
+
+    void deleteByBookId(Long bookId);
 }

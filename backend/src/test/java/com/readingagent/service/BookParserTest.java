@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -42,6 +43,7 @@ class BookParserTest {
         assertThat(book.chapters()).hasSize(1);
         assertThat(book.chapters().get(0).title()).isEqualTo("Chapter One");
         assertThat(book.chapters().get(0).content()).contains("Hello EPUB chapter");
+        assertThat(book.chapters().get(0).contentHtml()).contains("Hello EPUB chapter", "data:image/png;base64,");
     }
 
     private byte[] samplePdf() throws Exception {
@@ -91,17 +93,27 @@ class BookParserTest {
                     <?xml version="1.0" encoding="UTF-8"?>
                     <html xmlns="http://www.w3.org/1999/xhtml">
                       <head><title>Chapter One</title></head>
-                      <body><h1>Chapter One</h1><p>Hello EPUB chapter</p></body>
+                      <body>
+                        <h1>Chapter One</h1>
+                        <p>Hello EPUB chapter</p>
+                        <figure><img src="images/cover.png" alt="Cover"/><figcaption>Cover image</figcaption></figure>
+                      </body>
                     </html>
                     """);
+            addZipEntry(zip, "OEBPS/images/cover.png", Base64.getDecoder().decode(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="));
             zip.finish();
             return output.toByteArray();
         }
     }
 
     private void addZipEntry(ZipOutputStream zip, String path, String content) throws Exception {
+        addZipEntry(zip, path, content.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void addZipEntry(ZipOutputStream zip, String path, byte[] content) throws Exception {
         zip.putNextEntry(new ZipEntry(path));
-        zip.write(content.getBytes(StandardCharsets.UTF_8));
+        zip.write(content);
         zip.closeEntry();
     }
 }

@@ -8,6 +8,8 @@ import com.readingagent.service.BookService;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,5 +47,11 @@ public class BookController {
     @GetMapping("/chapters/{chapterId}")
     public ChapterDetail chapter(@PathVariable Long chapterId) {
         return bookService.getChapter(chapterId);
+    }
+
+    @DeleteMapping("/{bookId}")
+    public ResponseEntity<Void> delete(@PathVariable Long bookId) {
+        bookService.deleteBook(bookId);
+        return ResponseEntity.noContent().build();
     }
 }

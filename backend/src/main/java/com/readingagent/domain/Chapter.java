@@ -33,6 +33,10 @@ public class Chapter {
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String content;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String contentHtml;
+
     public Long getId() {
         return id;
     }
@@ -71,5 +75,13 @@ public class Chapter {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getContentHtml() {
+        return contentHtml;
+    }
+
+    public void setContentHtml(String contentHtml) {
+        this.contentHtml = contentHtml;
     }
 }

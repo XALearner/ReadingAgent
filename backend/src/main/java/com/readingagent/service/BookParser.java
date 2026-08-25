@@ -7,6 +7,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +21,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
@@ -30,6 +32,14 @@ import org.w3c.dom.NodeList;
 public class BookParser {
     private static final Pattern CHAPTER_PATTERN = Pattern.compile(
             "(?m)^(第[一二三四五六七八九十百千万0-9]+[章节卷回].*|#{1,3}\\s+.+)$");
+    private static final Safelist EPUB_HTML_SAFELIST = Safelist.relaxed()
+            .addTags("article", "aside", "section", "figure", "figcaption", "main", "nav", "span", "div",
+                    "h1", "h2", "h3", "h4", "h5", "h6")
+            .addAttributes(":all", "class", "id", "title")
+            .addAttributes("img", "src", "alt", "title", "width", "height")
+            .addAttributes("a", "href", "title")
+            .addProtocols("img", "src", "data")
+            .addProtocols("a", "href", "http", "https", "#");
 
     public ParsedBook parse(MultipartFile file, String title, String author) {
         try {
@@ -53,7 +63,7 @@ public class BookParser {
     private ParsedBook parseText(MultipartFile file, String title, String author, String fallbackTitle) throws IOException {
         String content = normalizeText(new String(file.getBytes(), StandardCharsets.UTF_8));
         ensureContent(content);
-        return new ParsedBook(blankToDefault(title, fallbackTitle), author, file.getOriginalFilename(), splitChapters(content));
+            return new ParsedBook(blankToDefault(title, fallbackTitle), author, file.getOriginalFilename(), splitChapters(content));
     }
 
     private ParsedBook parsePdf(MultipartFile file, String title, String author, String fallbackTitle) throws IOException {
@@ -179,13 +189,40 @@ public class BookParser {
                 continue;
             }
             org.jsoup.nodes.Document html = Jsoup.parse(new String(bytes, StandardCharsets.UTF_8));
+            html.select("script, iframe, object, embed, link, meta").remove();
+            rewriteEpubImages(html, path, entries);
+            String rawHtml = html.body() == null ? html.html() : html.body().html();
+            String contentHtml = cleanEpubHtml(rawHtml);
             String content = normalizeText(html.body() == null ? html.text() : html.body().text());
             if (!content.isBlank()) {
                 String chapterTitle = blankToDefault(html.title(), firstHeading(html));
-                chapters.add(new ParsedChapter(blankToDefault(chapterTitle, "章节 " + (chapters.size() + 1)), content));
+                chapters.add(new ParsedChapter(blankToDefault(chapterTitle, "章节 " + (chapters.size() + 1)),
+                        content, contentHtml));
             }
         }
         return chapters;
+    }
+
+    private void rewriteEpubImages(org.jsoup.nodes.Document html, String chapterPath, Map<String, byte[]> entries) {
+        String chapterBasePath = basePath(chapterPath);
+        for (org.jsoup.nodes.Element image : html.select("img[src]")) {
+            String src = image.attr("src");
+            if (src.isBlank() || src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://")) {
+                continue;
+            }
+            String imagePath = resolveZipPath(chapterBasePath, src);
+            byte[] imageBytes = entries.get(imagePath);
+            if (imageBytes == null) {
+                continue;
+            }
+            image.attr("src", "data:" + mimeType(imagePath) + ";base64," + Base64.getEncoder().encodeToString(imageBytes));
+        }
+    }
+
+    private String cleanEpubHtml(String html) {
+        org.jsoup.nodes.Document.OutputSettings settings = new org.jsoup.nodes.Document.OutputSettings()
+                .prettyPrint(false);
+        return Jsoup.clean(html, "", EPUB_HTML_SAFELIST, settings);
     }
 
     private Document parseXml(byte[] bytes) throws Exception {
@@ -262,9 +299,23 @@ public class BookParser {
         return path.replace('\\', '/');
     }
 
+    private String mimeType(String path) {
+        return switch (extension(path)) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            case "svg" -> "image/svg+xml";
+            default -> "application/octet-stream";
+        };
+    }
+
     public record ParsedBook(String title, String author, String fileName, List<ParsedChapter> chapters) {
     }
 
-    public record ParsedChapter(String title, String content) {
+    public record ParsedChapter(String title, String content, String contentHtml) {
+        public ParsedChapter(String title, String content) {
+            this(title, content, null);
+        }
     }
 }

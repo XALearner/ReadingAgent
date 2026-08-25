@@ -22,10 +22,11 @@ public final class BookDtos {
         }
     }
 
-    public record ChapterDetail(Long id, Long bookId, Integer sortOrder, String title, String content) {
+    public record ChapterDetail(Long id, Long bookId, Integer sortOrder, String title, String content,
+                                String contentHtml) {
         public static ChapterDetail from(Chapter chapter) {
             return new ChapterDetail(chapter.getId(), chapter.getBook().getId(), chapter.getSortOrder(),
-                    chapter.getTitle(), chapter.getContent());
+                    chapter.getTitle(), chapter.getContent(), chapter.getContentHtml());
         }
     }
 

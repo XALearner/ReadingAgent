@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, Upload } from 'lucide-react';
+import { BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, Trash2, Upload } from 'lucide-react';
 import { api } from './api/client';
 import './styles.css';
 
@@ -43,6 +43,34 @@ function App() {
     setHighlights(await api.listHighlights(book.id));
     if (chapterList.length > 0) {
       await openChapter(chapterList[0].id, book.id);
+    }
+  }
+
+  async function deleteBook(event, book) {
+    event.stopPropagation();
+    if (!window.confirm(`确定删除《${book.title}》吗？`)) {
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await api.deleteBook(book.id);
+      const remainingBooks = books.filter((item) => item.id !== book.id);
+      setBooks(remainingBooks);
+      if (activeBook?.id === book.id) {
+        setActiveBook(null);
+        setActiveChapter(null);
+        setChapters([]);
+        setHighlights([]);
+        setMessages([]);
+        if (remainingBooks.length > 0) {
+          await openBook(remainingBooks[0]);
+        }
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -160,14 +188,23 @@ function App() {
           <h2><Library size={17} />书架</h2>
           <div className="book-list">
             {books.map((book) => (
-              <button
+              <div
                 key={book.id}
-                className={activeBook?.id === book.id ? 'active' : ''}
-                onClick={() => openBook(book)}
+                className={`book-row ${activeBook?.id === book.id ? 'active' : ''}`}
               >
-                <strong>{book.title}</strong>
-                <span>{book.chapterCount} 章</span>
-              </button>
+                <button className="book-open" onClick={() => openBook(book)}>
+                  <strong>{book.title}</strong>
+                  <span>{book.chapterCount} 章</span>
+                </button>
+                <button
+                  className="delete-book"
+                  title="删除书籍"
+                  onClick={(event) => deleteBook(event, book)}
+                  disabled={busy}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             ))}
             {books.length === 0 && <p className="empty">上传一本 TXT、Markdown、EPUB 或 PDF 开始阅读。</p>}
           </div>
@@ -200,10 +237,17 @@ function App() {
               </div>
               <div className="progress">{readingPercent}%</div>
             </div>
-            <article onMouseUp={captureSelection}>
-              {activeChapter.content.split('\n').map((line, index) => (
-                <p key={index}>{line || '\u00A0'}</p>
-              ))}
+            <article
+              className={activeChapter.contentHtml ? 'epub-content' : ''}
+              onMouseUp={captureSelection}
+            >
+              {activeChapter.contentHtml ? (
+                <div dangerouslySetInnerHTML={{ __html: activeChapter.contentHtml }} />
+              ) : (
+                activeChapter.content.split('\n').map((line, index) => (
+                  <p key={index}>{line || '\u00A0'}</p>
+                ))
+              )}
             </article>
           </>
         ) : (

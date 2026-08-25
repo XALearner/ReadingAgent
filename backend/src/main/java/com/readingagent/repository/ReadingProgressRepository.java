@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReadingProgressRepository extends JpaRepository<ReadingProgress, Long> {
     Optional<ReadingProgress> findByBookIdAndUserKey(Long bookId, String userKey);
+
+    void deleteByBookId(Long bookId);
 }

@@ -26,6 +26,7 @@ async function request(path, options = {}) {
 export const api = {
   listBooks: () => request('/books'),
   uploadBook: (formData) => request('/books', { method: 'POST', body: formData }),
+  deleteBook: (bookId) => request(`/books/${bookId}`, { method: 'DELETE' }),
   listChapters: (bookId) => request(`/books/${bookId}/chapters`),
   getChapter: (chapterId) => request(`/books/chapters/${chapterId}`),
   ask: (bookId, payload) =>

@@ -114,7 +114,8 @@ button {
   gap: 8px;
 }
 
-.book-list button,
+.book-row,
+.book-open,
 .chapter-list button {
   background: transparent;
   border: 1px solid transparent;
@@ -125,17 +126,48 @@ button {
   width: 100%;
 }
 
-.book-list button strong,
-.book-list button span {
+.book-row {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr 34px;
+  padding: 0;
+}
+
+.book-open {
+  border: 0;
+  border-radius: 7px;
+}
+
+.book-open strong,
+.book-open span {
   display: block;
 }
 
-.book-list button.active,
+.book-row.active,
 .chapter-list button.active,
-.book-list button:hover,
+.book-row:hover,
 .chapter-list button:hover {
   background: #edf6f5;
   border-color: #c9e2df;
+}
+
+.delete-book {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  color: #73808f;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  margin-right: 4px;
+  width: 34px;
+}
+
+.delete-book:hover {
+  background: #ffe8e8;
+  color: #b42318;
 }
 
 .chapter-panel {
@@ -196,6 +228,101 @@ article {
 article p {
   margin: 0 0 18px;
   overflow-wrap: anywhere;
+}
+
+.epub-content {
+  overflow: hidden;
+}
+
+.epub-content h1,
+.epub-content h2,
+.epub-content h3,
+.epub-content h4,
+.epub-content h5,
+.epub-content h6 {
+  color: #19222e;
+  line-height: 1.35;
+  margin: 1.25em 0 0.65em;
+}
+
+.epub-content h1 {
+  font-size: 28px;
+}
+
+.epub-content h2 {
+  font-size: 24px;
+}
+
+.epub-content h3 {
+  font-size: 20px;
+}
+
+.epub-content p,
+.epub-content div,
+.epub-content section {
+  overflow-wrap: anywhere;
+}
+
+.epub-content p {
+  margin: 0 0 1em;
+}
+
+.epub-content img {
+  display: block;
+  height: auto;
+  margin: 20px auto;
+  max-width: 100%;
+}
+
+.epub-content figure {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.epub-content figcaption {
+  color: #667486;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.epub-content blockquote {
+  border-left: 4px solid #c9e2df;
+  color: #415163;
+  margin: 20px 0;
+  padding: 4px 0 4px 18px;
+}
+
+.epub-content ul,
+.epub-content ol {
+  margin: 0 0 18px 1.4em;
+  padding: 0;
+}
+
+.epub-content li {
+  margin: 0 0 8px;
+}
+
+.epub-content table {
+  border-collapse: collapse;
+  display: block;
+  margin: 20px 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.epub-content th,
+.epub-content td {
+  border: 1px solid #ded8cf;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.epub-content pre {
+  background: #f1ede4;
+  border-radius: 8px;
+  overflow-x: auto;
+  padding: 14px;
 }
 
 .welcome {
