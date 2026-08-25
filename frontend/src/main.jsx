@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowRight, BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, Trash2, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { api } from './api/client';
 import './styles.css';
 
@@ -165,6 +165,25 @@ function App() {
       setMessages((items) => [
         ...items,
         { role: 'assistant', content: response.answer, sources: response.sources },
+      ]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reindexActiveBook() {
+    if (!activeBook) {
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await api.reindexBook(activeBook.id);
+      setMessages((items) => [
+        ...items,
+        { role: 'assistant', content: '已开始为当前书籍重建 RAG 索引，稍等一会儿后就可以提问。' },
       ]);
     } catch (err) {
       setError(err.message);
@@ -339,7 +358,17 @@ function App() {
         </section>
 
         <section className="tool-block ai-block">
-          <h2><Bot size={17} />问问这本书</h2>
+          <div className="tool-heading">
+            <h2><Bot size={17} />问问这本书</h2>
+            <button
+              className="small-icon-button"
+              disabled={!activeBook || busy}
+              onClick={reindexActiveBook}
+              title="重建本书 RAG 索引"
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
           <div className="chat-list">
             {messages.map((message, index) => (
               <div key={index} className={`chat ${message.role}`}>

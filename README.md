@@ -47,7 +47,7 @@ MYSQL_ROOT_PASSWORD=reading_root
 MYSQL_DATABASE=reading_agent
 MYSQL_USER=reading
 MYSQL_PASSWORD=reading_pass
-VITE_API_BASE=http://你的服务器IP:8080/api
+VITE_API_BASE=/api
 CORS_ORIGIN=http://你的服务器IP
 ```
 
@@ -58,6 +58,8 @@ docker compose up -d --build
 ```
 
 浏览器打开：`http://你的服务器IP`
+
+Docker 部署默认启用 RAG：后端会等待 MySQL 和 Elasticsearch 健康后启动。上传新书后会自动在后台创建向量索引；对已经上传过的旧书，可以在右侧“问问这本书”标题旁点击重建索引按钮。
 
 如果只想先启用上传、阅读、划线等基础功能，可以暂时不配置 AI：
 

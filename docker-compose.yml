@@ -30,6 +30,12 @@ services:
       - "9200:9200"
     volumes:
       - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=5s || exit 1"]
+      interval: 10s
+      timeout: 8s
+      retries: 18
+      start_period: 45s
 
   backend:
     build:
@@ -39,17 +45,18 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-reading_agent}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
       DB_USERNAME: ${MYSQL_USER:-reading}
       DB_PASSWORD: ${MYSQL_PASSWORD:-reading_pass}
       DB_DRIVER: com.mysql.cj.jdbc.Driver
       ELASTICSEARCH_URIS: http://elasticsearch:9200
-      AI_ENABLED: ${AI_ENABLED:-false}
-      AI_MODEL_CHAT: ${AI_MODEL_CHAT:-none}
-      AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-none}
-      AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-none}
-      SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.ai.vectorstore.elasticsearch.autoconfigure.ElasticsearchVectorStoreAutoConfiguration
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_MODEL_CHAT: ${AI_MODEL_CHAT:-openai}
+      AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-openai}
+      AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-elasticsearch}
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
       QWEN_MODEL: ${QWEN_MODEL:-qwen-plus}

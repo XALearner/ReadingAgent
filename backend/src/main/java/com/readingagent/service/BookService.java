@@ -98,4 +98,11 @@ public class BookService {
         chapterRepository.deleteByBookId(bookId);
         bookRepository.delete(book);
     }
+
+    @Transactional(readOnly = true)
+    public void reindexBook(Long bookId) {
+        Book book = getBook(bookId);
+        List<Chapter> chapters = chapterRepository.findByBookIdOrderBySortOrderAsc(bookId);
+        ragService.indexBookAsync(book, chapters);
+    }
 }

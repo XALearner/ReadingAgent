@@ -115,6 +115,17 @@ button {
   margin: 0 0 10px;
 }
 
+.tool-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.tool-heading h2 {
+  margin: 0;
+}
+
 .book-list,
 .chapter-list,
 .chat-list,
@@ -178,6 +189,24 @@ button {
 .delete-book:hover {
   background: #ffe8e8;
   color: #b42318;
+}
+
+.small-icon-button {
+  align-items: center;
+  background: #eef2f6;
+  border: 1px solid #d7dee7;
+  border-radius: 8px;
+  color: #516071;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.small-icon-button:hover {
+  background: #edf6f5;
+  border-color: #c9e2df;
+  color: #256f6c;
 }
 
 .chapter-panel {

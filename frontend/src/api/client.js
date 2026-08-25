@@ -35,6 +35,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+  reindexBook: (bookId) => request(`/books/${bookId}/ai/reindex`, { method: 'POST' }),
   listHighlights: (bookId) => request(`/books/${bookId}/highlights`),
   createHighlight: (bookId, payload) =>
     request(`/books/${bookId}/highlights`, {
