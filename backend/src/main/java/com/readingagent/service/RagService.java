@@ -4,11 +4,15 @@ import com.readingagent.domain.Book;
 import com.readingagent.domain.Chapter;
 import com.readingagent.dto.AiDtos.AskResponse;
 import com.readingagent.dto.AiDtos.SourceSnippet;
+import com.readingagent.repository.ChapterRepository;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -22,17 +26,24 @@ import org.slf4j.LoggerFactory;
 @Service
 public class RagService {
     private static final Logger log = LoggerFactory.getLogger(RagService.class);
+    private static final int VECTOR_TOP_K = 30;
+    private static final int CONTEXT_LIMIT = 6;
+    private static final int INDEX_BATCH_SIZE = 64;
+    private static final Pattern TERM_SPLITTER = Pattern.compile("[^\\p{IsAlphabetic}\\p{IsDigit}\\u4e00-\\u9fff]+");
 
     private final ObjectProvider<VectorStore> vectorStoreProvider;
     private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
     private final Chunker chunker;
+    private final ChapterRepository chapterRepository;
 
     public RagService(ObjectProvider<VectorStore> vectorStoreProvider,
                       ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
-                      Chunker chunker) {
+                      Chunker chunker,
+                      ChapterRepository chapterRepository) {
         this.vectorStoreProvider = vectorStoreProvider;
         this.chatClientBuilderProvider = chatClientBuilderProvider;
         this.chunker = chunker;
+        this.chapterRepository = chapterRepository;
     }
 
     @Async
@@ -47,6 +58,7 @@ public class RagService {
     private void indexBook(Book book, List<Chapter> chapters) {
         VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
         if (vectorStore == null) {
+            log.info("Skip AI index for book {} because VectorStore is not configured", book.getId());
             return;
         }
         List<Document> documents = new ArrayList<>();
@@ -66,47 +78,37 @@ public class RagService {
             }
         }
         if (!documents.isEmpty()) {
-            vectorStore.add(documents);
+            log.info("Creating AI index for book {} with {} chunks", book.getId(), documents.size());
+            for (int from = 0; from < documents.size(); from += INDEX_BATCH_SIZE) {
+                int to = Math.min(from + INDEX_BATCH_SIZE, documents.size());
+                vectorStore.add(documents.subList(from, to));
+            }
+            log.info("Created AI index for book {}", book.getId());
         }
     }
 
-    public AskResponse ask(Book book, String question) {
+    public AskResponse ask(Book book, Long chapterId, String question) {
         VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
         ChatClient.Builder chatBuilder = chatClientBuilderProvider.getIfAvailable();
-        if (vectorStore == null || chatBuilder == null) {
+        if (chatBuilder == null) {
             return new AskResponse("AI 问答还没有配置完成：请确认 DASHSCOPE_API_KEY 和 Elasticsearch 已启动。", List.of());
         }
 
-        List<Document> matched;
-        try {
-            matched = vectorStore.similaritySearch(SearchRequest.builder()
-                    .query(question)
-                    .topK(12)
-                    .build());
-        } catch (RuntimeException ex) {
-            log.warn("RAG retrieval failed for book {}", book.getId(), ex);
-            return new AskResponse("RAG 检索失败：请确认 Elasticsearch 正常、DashScope API Key 可用，并且 embedding 模型配置正确。", List.of());
+        List<SourceSnippet> sources = vectorSources(book, question, vectorStore);
+        if (sources.isEmpty()) {
+            sources = fallbackSources(book, chapterId, question);
         }
 
-        List<Document> bookDocs = matched.stream()
-                .filter(doc -> Objects.equals(String.valueOf(book.getId()), String.valueOf(doc.getMetadata().get("bookId"))))
-                .limit(6)
-                .toList();
-
-        if (bookDocs.isEmpty()) {
-            return new AskResponse("我没有在这本书里找到足够相关的内容。你可以换个问法，或者先确认这本书已经完成索引。", List.of());
+        if (sources.isEmpty()) {
+            return new AskResponse("我还没有在这本书里找到可用内容。请先点击“重建本书 RAG 索引”，或确认当前章节包含可阅读文本。", List.of());
         }
 
         StringBuilder context = new StringBuilder();
-        List<SourceSnippet> sources = new ArrayList<>();
-        for (int i = 0; i < bookDocs.size(); i++) {
-            Document doc = bookDocs.get(i);
-            Long chapterId = Long.valueOf(String.valueOf(doc.getMetadata().get("chapterId")));
-            String chapterTitle = String.valueOf(doc.getMetadata().get("chapterTitle"));
+        for (int i = 0; i < sources.size(); i++) {
+            SourceSnippet source = sources.get(i);
             context.append("资料 ").append(i + 1)
-                    .append("，章节：").append(chapterTitle)
-                    .append("\n").append(doc.getText()).append("\n\n");
-            sources.add(new SourceSnippet(book.getId(), chapterId, chapterTitle, doc.getText()));
+                    .append("，章节：").append(source.chapterTitle())
+                    .append("\n").append(source.content()).append("\n\n");
         }
 
         String answer;
@@ -134,5 +136,132 @@ public class RagService {
         }
 
         return new AskResponse(answer, sources);
+    }
+
+    private List<SourceSnippet> vectorSources(Book book, String question, VectorStore vectorStore) {
+        if (vectorStore == null) {
+            return List.of();
+        }
+        List<Document> matched;
+        try {
+            matched = vectorStore.similaritySearch(SearchRequest.builder()
+                    .query(question)
+                    .topK(VECTOR_TOP_K)
+                    .build());
+        } catch (RuntimeException ex) {
+            log.warn("RAG retrieval failed for book {}", book.getId(), ex);
+            return List.of();
+        }
+
+        return matched.stream()
+                .filter(doc -> Objects.equals(String.valueOf(book.getId()), String.valueOf(doc.getMetadata().get("bookId"))))
+                .limit(CONTEXT_LIMIT)
+                .map(doc -> new SourceSnippet(
+                        book.getId(),
+                        asLong(doc.getMetadata().get("chapterId")),
+                        String.valueOf(doc.getMetadata().get("chapterTitle")),
+                        doc.getText()))
+                .toList();
+    }
+
+    private List<SourceSnippet> fallbackSources(Book book, Long activeChapterId, String question) {
+        List<Chapter> chapters = chapterRepository.findByBookIdOrderBySortOrderAsc(book.getId());
+        if (chapters.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> terms = queryTerms(question);
+        Map<String, RankedSnippet> ranked = new LinkedHashMap<>();
+
+        if (activeChapterId != null) {
+            chapters.stream()
+                    .filter(chapter -> Objects.equals(chapter.getId(), activeChapterId))
+                    .findFirst()
+                    .ifPresent(chapter -> addChapterSnippets(ranked, book, chapter, terms, true));
+        }
+
+        for (Chapter chapter : chapters) {
+            addChapterSnippets(ranked, book, chapter, terms, false);
+        }
+
+        return ranked.values().stream()
+                .sorted(Comparator.comparingInt(RankedSnippet::score).reversed())
+                .limit(CONTEXT_LIMIT)
+                .map(RankedSnippet::source)
+                .toList();
+    }
+
+    private void addChapterSnippets(Map<String, RankedSnippet> ranked,
+                                    Book book,
+                                    Chapter chapter,
+                                    List<String> terms,
+                                    boolean activeChapter) {
+        List<String> chunks = chunker.split(chapter.getContent());
+        for (int i = 0; i < chunks.size(); i++) {
+            String chunk = chunks.get(i);
+            int score = score(chunk, terms);
+            if (score <= 0 && !activeChapter) {
+                continue;
+            }
+            int adjustedScore = score + (activeChapter ? 2 : 0);
+            String key = chapter.getId() + ":" + i;
+            ranked.putIfAbsent(key, new RankedSnippet(adjustedScore, new SourceSnippet(
+                    book.getId(),
+                    chapter.getId(),
+                    chapter.getTitle(),
+                    excerpt(chunk))));
+        }
+    }
+
+    private List<String> queryTerms(String question) {
+        String normalized = question == null ? "" : question.toLowerCase();
+        List<String> terms = new ArrayList<>();
+        for (String term : TERM_SPLITTER.split(normalized)) {
+            if (term.length() >= 2) {
+                terms.add(term);
+            }
+        }
+        normalized.codePoints()
+                .filter(codePoint -> codePoint >= 0x4e00 && codePoint <= 0x9fff)
+                .mapToObj(Character::toString)
+                .forEach(terms::add);
+        return terms;
+    }
+
+    private int score(String text, List<String> terms) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        String normalized = text.toLowerCase();
+        int score = 0;
+        for (String term : terms) {
+            int index = normalized.indexOf(term);
+            while (index >= 0) {
+                score++;
+                index = normalized.indexOf(term, index + term.length());
+            }
+        }
+        return score;
+    }
+
+    private String excerpt(String text) {
+        if (text == null || text.length() <= 1400) {
+            return text;
+        }
+        return text.substring(0, 1400);
+    }
+
+    private Long asLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(String.valueOf(value));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private record RankedSnippet(int score, SourceSnippet source) {
     }
 }

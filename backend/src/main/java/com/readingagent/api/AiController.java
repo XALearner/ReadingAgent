@@ -27,7 +27,7 @@ public class AiController {
     @PostMapping("/ask")
     public AskResponse ask(@PathVariable Long bookId, @Valid @RequestBody AskRequest request) {
         Book book = bookService.getBook(bookId);
-        return ragService.ask(book, request.question());
+        return ragService.ask(book, request.chapterId(), request.question());
     }
 
     @PostMapping("/reindex")
