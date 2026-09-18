@@ -15,4 +15,13 @@ public final class AiDtos {
 
     public record AskResponse(String answer, List<SourceSnippet> sources) {
     }
+
+    public record DeepAnalysisRequest(@NotBlank String question) {
+    }
+
+    public record AgentStep(String agent, String status, String summary) {
+    }
+
+    public record MultiAgentResponse(String answer, List<SourceSnippet> sources, List<AgentStep> steps) {
+    }
 }

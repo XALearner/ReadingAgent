@@ -503,6 +503,38 @@ button:disabled {
   overflow: hidden;
 }
 
+.agent-mode {
+  background: #edf1f4;
+  border: 1px solid #d9e0e6;
+  display: grid;
+  flex: 0 0 38px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 10px;
+  padding: 3px;
+}
+
+.agent-mode,
+.agent-mode button {
+  border-radius: 6px;
+}
+
+.agent-mode button {
+  align-items: center;
+  background: transparent;
+  color: #667486;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  min-width: 0;
+  padding: 6px 8px;
+}
+
+.agent-mode button.active {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(31, 41, 51, 0.12);
+  color: #1f2933;
+}
+
 .chat-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -542,6 +574,34 @@ button:disabled {
   color: #516071;
   font-size: 12px;
   padding: 4px 8px;
+}
+
+.agent-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.agent-steps span {
+  border: 1px solid #b9c6d2;
+  border-radius: 999px;
+  color: #516071;
+  font-size: 12px;
+  padding: 3px 7px;
+}
+
+.agent-steps span.completed {
+  background: #e9f6ef;
+  border-color: #abd5bd;
+  color: #276044;
+}
+
+.agent-steps span.fallback,
+.agent-steps span.failed {
+  background: #fff3dc;
+  border-color: #e5c98e;
+  color: #755718;
 }
 
 .ask-form {

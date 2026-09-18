@@ -10,6 +10,8 @@
 - 阅读进度接口
 - 划线和笔记
 - 基于 Elasticsearch VectorStore 的书籍问答接口
+- 检索、分析、审校协作的 Multi Agent 深度分析
+- 可供外部 AI 客户端调用的 MCP Server
 - Docker Compose 本地部署
 
 ## Windows + Docker Desktop 启动
@@ -95,6 +97,15 @@ docker compose logs -f backend
 docker compose exec backend printenv
 ```
 
+## Multi Agent 深度分析
+
+网页右侧问答区域支持两种模式：
+
+- `快速问答`：沿用单次 RAG 问答，适合概念解释和简单问题。
+- `深度分析`：依次运行 Retrieval Agent、Analysis Agent 和 Review Agent，适合跨章节比较、人物分析和主题论证。
+
+深度分析接口为 `POST /api/books/{bookId}/ai/analyze`。一次请求通常会调用两次聊天模型，分别生成分析草稿和审校后的最终答案，因此耗时和模型用量会高于快速问答。审校调用失败时会自动返回分析草稿。
+
 ## MCP Server
 
 ReadingAgent 同时提供基于 SSE 的 MCP Server。MCP 只增加一个面向 AI Agent 的入口，不会替代网页使用的 REST API。
@@ -110,6 +121,7 @@ ReadingAgent 同时提供基于 SSE 的 MCP Server。MCP 只增加一个面向 A
 - `read_chapter`：分段读取章节正文
 - `search_book`：在指定书籍内进行语义检索
 - `ask_book`：基于书籍内容进行 RAG 问答
+- `analyze_book`：使用 Multi Agent 工作流进行深度分析
 - `list_highlights`：读取划线和笔记
 
 可以使用 MCP Inspector 测试 SSE 地址：

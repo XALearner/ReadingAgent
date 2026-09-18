@@ -3,6 +3,7 @@ package com.readingagent.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.readingagent.agent.MultiAgentCoordinator;
 import com.readingagent.dto.BookDtos.ChapterDetail;
 import com.readingagent.service.BookService;
 import com.readingagent.service.HighlightService;
@@ -25,12 +26,14 @@ class ReadingAgentMcpToolsTest {
     private HighlightService highlightService;
     @Mock
     private RagService ragService;
+    @Mock
+    private MultiAgentCoordinator multiAgentCoordinator;
 
     private ReadingAgentMcpTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new ReadingAgentMcpTools(bookService, highlightService, ragService);
+        tools = new ReadingAgentMcpTools(bookService, highlightService, ragService, multiAgentCoordinator);
     }
 
     @Test
@@ -47,6 +50,7 @@ class ReadingAgentMcpToolsTest {
                 "read_chapter",
                 "search_book",
                 "ask_book",
+                "analyze_book",
                 "list_highlights");
     }
 

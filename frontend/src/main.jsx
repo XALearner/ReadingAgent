@@ -1,10 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowRight, BookOpen, Bot, Highlighter, Library, Loader2, MessageCircle, PanelLeft, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, Bot, BrainCircuit, Highlighter, Library, Loader2, MessageCircle, PanelLeft, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { api } from './api/client';
 import './styles.css';
 
 const USER_KEY = 'demo-user';
+const AGENT_LABELS = {
+  retrieval: '检索',
+  analysis: '分析',
+  review: '审校',
+};
 
 function App() {
   const [books, setBooks] = useState([]);
@@ -14,6 +19,7 @@ function App() {
   const [highlights, setHighlights] = useState([]);
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState('');
+  const [agentMode, setAgentMode] = useState('quick');
   const [note, setNote] = useState('');
   const [selectedText, setSelectedText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -150,6 +156,7 @@ function App() {
       return;
     }
     const userQuestion = question.trim();
+    const selectedMode = agentMode;
     setQuestion('');
     if (questionRef.current) {
       questionRef.current.style.height = '42px';
@@ -158,13 +165,21 @@ function App() {
     setBusy(true);
     setError('');
     try {
-      const response = await api.ask(activeBook.id, {
-        question: userQuestion,
-        chapterId: activeChapter?.id,
-      });
+      const response = selectedMode === 'deep'
+        ? await api.analyze(activeBook.id, { question: userQuestion })
+        : await api.ask(activeBook.id, {
+            question: userQuestion,
+            chapterId: activeChapter?.id,
+          });
       setMessages((items) => [
         ...items,
-        { role: 'assistant', content: response.answer, sources: response.sources },
+        {
+          role: 'assistant',
+          content: response.answer,
+          sources: response.sources,
+          steps: response.steps,
+          mode: selectedMode,
+        },
       ]);
     } catch (err) {
       setError(err.message);
@@ -369,6 +384,26 @@ function App() {
               <RefreshCw size={16} />
             </button>
           </div>
+          <div className="agent-mode" aria-label="问答模式">
+            <button
+              type="button"
+              className={agentMode === 'quick' ? 'active' : ''}
+              onClick={() => setAgentMode('quick')}
+              disabled={busy}
+            >
+              <MessageCircle size={15} />
+              快速问答
+            </button>
+            <button
+              type="button"
+              className={agentMode === 'deep' ? 'active' : ''}
+              onClick={() => setAgentMode('deep')}
+              disabled={busy}
+            >
+              <BrainCircuit size={15} />
+              深度分析
+            </button>
+          </div>
           <div className="chat-list">
             {messages.map((message, index) => (
               <div key={index} className={`chat ${message.role}`}>
@@ -377,6 +412,15 @@ function App() {
                   <div className="sources">
                     {message.sources.slice(0, 3).map((source, sourceIndex) => (
                       <span key={sourceIndex}>{source.chapterTitle}</span>
+                    ))}
+                  </div>
+                )}
+                {message.steps?.length > 0 && (
+                  <div className="agent-steps">
+                    {message.steps.map((step) => (
+                      <span key={step.agent} className={step.status} title={step.summary}>
+                        {AGENT_LABELS[step.agent] || step.agent}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -390,7 +434,7 @@ function App() {
               value={question}
               onChange={handleQuestionChange}
               onKeyDown={handleQuestionKeyDown}
-              placeholder="输入你的问题"
+              placeholder={agentMode === 'deep' ? '输入需要跨章节分析的问题' : '输入你的问题'}
               rows={1}
             />
             <button className="icon-button" disabled={busy || !question.trim()} title="发送">

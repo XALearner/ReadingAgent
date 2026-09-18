@@ -1,6 +1,7 @@
 package com.readingagent.mcp;
 
 import com.readingagent.dto.AiDtos.AskResponse;
+import com.readingagent.dto.AiDtos.MultiAgentResponse;
 import com.readingagent.dto.AiDtos.SourceSnippet;
 import com.readingagent.dto.BookDtos.BookSummary;
 import com.readingagent.dto.BookDtos.ChapterDetail;
@@ -9,6 +10,7 @@ import com.readingagent.dto.HighlightDtos.HighlightResponse;
 import com.readingagent.service.BookService;
 import com.readingagent.service.HighlightService;
 import com.readingagent.service.RagService;
+import com.readingagent.agent.MultiAgentCoordinator;
 import java.util.List;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -22,11 +24,14 @@ public class ReadingAgentMcpTools {
     private final BookService bookService;
     private final HighlightService highlightService;
     private final RagService ragService;
+    private final MultiAgentCoordinator multiAgentCoordinator;
 
-    public ReadingAgentMcpTools(BookService bookService, HighlightService highlightService, RagService ragService) {
+    public ReadingAgentMcpTools(BookService bookService, HighlightService highlightService, RagService ragService,
+                                MultiAgentCoordinator multiAgentCoordinator) {
         this.bookService = bookService;
         this.highlightService = highlightService;
         this.ragService = ragService;
+        this.multiAgentCoordinator = multiAgentCoordinator;
     }
 
     @Tool(name = "list_books", description = "列出 ReadingAgent 本地书架中的全部书籍及其 ID、作者和章节数量")
@@ -69,6 +74,14 @@ public class ReadingAgentMcpTools {
             @ToolParam(description = "要询问的问题") String question) {
         requireText(question, "问题不能为空");
         return ragService.ask(bookService.getBook(bookId), null, question);
+    }
+
+    @Tool(name = "analyze_book", description = "使用检索、分析和审校 Multi Agent 工作流深度分析指定书籍中的复杂问题")
+    public MultiAgentResponse analyzeBook(
+            @ToolParam(description = "书籍 ID") Long bookId,
+            @ToolParam(description = "需要跨章节分析、比较或论证的问题") String question) {
+        requireText(question, "问题不能为空");
+        return multiAgentCoordinator.analyze(bookService.getBook(bookId), question);
     }
 
     @Tool(name = "list_highlights", description = "列出指定书籍中的全部划线和笔记")
