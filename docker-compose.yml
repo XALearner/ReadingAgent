@@ -2,13 +2,14 @@ services:
   mysql:
     image: mysql:8.4
     container_name: reading-mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-reading_root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-reading_agent}
       MYSQL_USER: ${MYSQL_USER:-reading}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-reading_pass}
     ports:
-      - "3306:3306"
+      - "${HOST_BIND:-127.0.0.1}:${MYSQL_PORT:-3307}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
@@ -22,12 +23,14 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     container_name: reading-elasticsearch
+    restart: unless-stopped
+    profiles: ["ai"]
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
+      ES_JAVA_OPTS: "-Xms${ES_HEAP_SIZE:-1g} -Xmx${ES_HEAP_SIZE:-1g}"
     ports:
-      - "9200:9200"
+      - "${HOST_BIND:-127.0.0.1}:${ELASTICSEARCH_PORT:-9200}:9200"
     volumes:
       - es-data:/usr/share/elasticsearch/data
     healthcheck:
@@ -47,6 +50,7 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+        required: false
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-reading_agent}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
       DB_USERNAME: ${MYSQL_USER:-reading}
@@ -58,6 +62,7 @@ services:
       AI_MODEL_CHAT: ${AI_MODEL_CHAT:-openai}
       AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-openai}
       AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-elasticsearch}
+      SPRING_AUTOCONFIGURE_EXCLUDE: ${SPRING_AUTOCONFIGURE_EXCLUDE:-}
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
       QWEN_CHAT_COMPLETIONS_PATH: ${QWEN_CHAT_COMPLETIONS_PATH:-/chat/completions}
@@ -65,21 +70,21 @@ services:
       QWEN_MODEL: ${QWEN_MODEL:-qwen-plus}
       QWEN_EMBEDDING_MODEL: ${QWEN_EMBEDDING_MODEL:-text-embedding-v3}
       EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1024}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://localhost:5173}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8088,http://127.0.0.1:8088}
     ports:
-      - "8080:8080"
+      - "${HOST_BIND:-127.0.0.1}:${BACKEND_PORT:-8080}:8080"
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE: /api
+        VITE_API_BASE: ${VITE_API_BASE:-/api}
     container_name: reading-frontend
     restart: unless-stopped
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "${HOST_BIND:-127.0.0.1}:${APP_PORT:-8088}:80"
 
 volumes:
   mysql-data:
