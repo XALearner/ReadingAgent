@@ -62,6 +62,7 @@ services:
       AI_MODEL_CHAT: ${AI_MODEL_CHAT:-openai}
       AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-openai}
       AI_VECTORSTORE_TYPE: ${AI_VECTORSTORE_TYPE:-elasticsearch}
+      MCP_ENABLED: ${MCP_ENABLED:-true}
       SPRING_AUTOCONFIGURE_EXCLUDE: ${SPRING_AUTOCONFIGURE_EXCLUDE:-}
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}

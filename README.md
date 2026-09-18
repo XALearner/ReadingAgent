@@ -95,6 +95,37 @@ docker compose logs -f backend
 docker compose exec backend printenv
 ```
 
+## MCP Server
+
+ReadingAgent 同时提供基于 SSE 的 MCP Server。MCP 只增加一个面向 AI Agent 的入口，不会替代网页使用的 REST API。
+
+- 通过前端 Nginx 访问：`http://localhost:8088/mcp/sse`
+- 直接访问后端：`http://localhost:8080/mcp/sse`
+- 开关：`.env` 中的 `MCP_ENABLED=true`
+
+当前提供以下只读工具：
+
+- `list_books`：列出本地书架
+- `get_book_chapters`：获取书籍目录
+- `read_chapter`：分段读取章节正文
+- `search_book`：在指定书籍内进行语义检索
+- `ask_book`：基于书籍内容进行 RAG 问答
+- `list_highlights`：读取划线和笔记
+
+可以使用 MCP Inspector 测试 SSE 地址：
+
+```powershell
+npx -y @modelcontextprotocol/inspector
+```
+
+在 Inspector 中选择 SSE Transport，并连接 `http://localhost:8088/mcp/sse`。如果关闭了 AI，书架、目录、章节和笔记工具仍可使用，但 `ask_book` 不会调用大模型，`search_book` 会回退到本地文本检索。
+
+也可以在项目根目录运行内置的协议冒烟测试，它会完成 MCP 初始化并列出服务端工具：
+
+```powershell
+node scripts/mcp-smoke-test.mjs
+```
+
 ## 不使用 Docker 的开发启动
 
 后端默认使用 H2 内存数据库：

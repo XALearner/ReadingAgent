@@ -140,6 +140,12 @@ public class RagService {
         return new AskResponse(answer, sources);
     }
 
+    public List<SourceSnippet> search(Book book, String query) {
+        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
+        List<SourceSnippet> sources = vectorSources(book, query, vectorStore);
+        return sources.isEmpty() ? fallbackSources(book, null, query) : sources;
+    }
+
     private List<SourceSnippet> vectorSources(Book book, String question, VectorStore vectorStore) {
         if (vectorStore == null) {
             return List.of();

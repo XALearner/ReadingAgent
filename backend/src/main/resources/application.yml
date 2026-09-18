@@ -23,6 +23,20 @@ spring:
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
   ai:
+    mcp:
+      server:
+        enabled: ${MCP_ENABLED:true}
+        name: reading-agent
+        version: 0.0.1
+        type: SYNC
+        instructions: "提供本地书库、章节、划线、书内检索和 RAG 问答能力。优先先查询书籍和章节，再读取或检索具体内容。"
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/messages
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
     model:
       chat: ${AI_MODEL_CHAT:none}
       embedding: ${AI_MODEL_EMBEDDING:none}
