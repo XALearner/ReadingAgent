@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowRight, BookOpen, Bot, BrainCircuit, Highlighter, Library, Loader2, MessageCircle, PanelLeft, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, Bot, BrainCircuit, Highlighter, Library, Loader2, MessageCircle, PanelLeft, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { api } from './api/client';
 import './styles.css';
 
@@ -18,6 +18,8 @@ function App() {
   const [activeChapter, setActiveChapter] = useState(null);
   const [highlights, setHighlights] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [sessionId, setSessionId] = useState(null);
   const [question, setQuestion] = useState('');
   const [agentMode, setAgentMode] = useState('quick');
   const [note, setNote] = useState('');
@@ -46,6 +48,17 @@ function App() {
   async function openBook(book) {
     setActiveBook(book);
     setError('');
+    setMessages([]);
+    setSessionId(null);
+    const savedSessions = await api.listSessions(book.id, USER_KEY);
+    setSessions(savedSessions);
+    const storedId = localStorage.getItem(`reading-agent-session-${book.id}`);
+    const currentId = savedSessions.some((item) => item.id === storedId) ? storedId : savedSessions[0]?.id;
+    if (currentId) {
+      setSessionId(currentId);
+      setMessages(await api.listMessages(book.id, currentId, USER_KEY));
+      localStorage.setItem(`reading-agent-session-${book.id}`, currentId);
+    }
     const chapterList = await api.listChapters(book.id);
     setChapters(chapterList);
     setHighlights(await api.listHighlights(book.id));
@@ -71,6 +84,9 @@ function App() {
         setChapters([]);
         setHighlights([]);
         setMessages([]);
+        setSessions([]);
+        setSessionId(null);
+        localStorage.removeItem(`reading-agent-session-${book.id}`);
         if (remainingBooks.length > 0) {
           await openBook(remainingBooks[0]);
         }
@@ -157,6 +173,7 @@ function App() {
     }
     const userQuestion = question.trim();
     const selectedMode = agentMode;
+    const bookId = activeBook.id;
     setQuestion('');
     if (questionRef.current) {
       questionRef.current.style.height = '42px';
@@ -166,11 +183,17 @@ function App() {
     setError('');
     try {
       const response = selectedMode === 'deep'
-        ? await api.analyze(activeBook.id, { question: userQuestion })
-        : await api.ask(activeBook.id, {
+        ? await api.analyze(bookId, { question: userQuestion, userKey: USER_KEY, sessionId })
+        : await api.ask(bookId, {
             question: userQuestion,
             chapterId: activeChapter?.id,
+            userKey: USER_KEY,
+            sessionId,
           });
+      if (response.sessionId) {
+        setSessionId(response.sessionId);
+        localStorage.setItem(`reading-agent-session-${bookId}`, response.sessionId);
+      }
       setMessages((items) => [
         ...items,
         {
@@ -181,6 +204,57 @@ function App() {
           mode: selectedMode,
         },
       ]);
+      if (response.sessionId) {
+        api.listSessions(bookId, USER_KEY).then(setSessions).catch(() => {});
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createConversation() {
+    if (!activeBook) return;
+    setBusy(true);
+    try {
+      const session = await api.createSession(activeBook.id, USER_KEY);
+      setSessions((items) => [session, ...items]);
+      setSessionId(session.id);
+      setMessages([]);
+      localStorage.setItem(`reading-agent-session-${activeBook.id}`, session.id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function switchConversation(id) {
+    if (!activeBook || !id) return;
+    setBusy(true);
+    try {
+      setMessages(await api.listMessages(activeBook.id, id, USER_KEY));
+      setSessionId(id);
+      localStorage.setItem(`reading-agent-session-${activeBook.id}`, id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteConversation() {
+    if (!activeBook || !sessionId) return;
+    setBusy(true);
+    try {
+      await api.deleteSession(activeBook.id, sessionId, USER_KEY);
+      const remaining = sessions.filter((item) => item.id !== sessionId);
+      setSessions(remaining);
+      setSessionId(null);
+      setMessages([]);
+      localStorage.removeItem(`reading-agent-session-${activeBook.id}`);
+      if (remaining.length) await switchConversation(remaining[0].id);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -375,15 +449,17 @@ function App() {
         <section className="tool-block ai-block">
           <div className="tool-heading">
             <h2><Bot size={17} />问问这本书</h2>
-            <button
-              className="small-icon-button"
-              disabled={!activeBook || busy}
-              onClick={reindexActiveBook}
-              title="重建本书 RAG 索引"
-            >
-              <RefreshCw size={16} />
-            </button>
+            <div className="chat-tools">
+              <button className="small-icon-button" disabled={!activeBook || busy} onClick={createConversation} title="新建会话" aria-label="新建会话"><Plus size={16} /></button>
+              <button className="small-icon-button" disabled={!activeBook || !sessionId || busy} onClick={deleteConversation} title="删除当前会话" aria-label="删除当前会话"><Trash2 size={16} /></button>
+              <button className="small-icon-button" disabled={!activeBook || busy} onClick={reindexActiveBook} title="重建本书 RAG 索引" aria-label="重建本书 RAG 索引"><RefreshCw size={16} /></button>
+            </div>
           </div>
+          {sessions.length > 0 && (
+            <select className="session-select" value={sessionId || ''} onChange={(event) => switchConversation(event.target.value)} disabled={busy} aria-label="选择会话">
+              {sessions.map((session) => <option key={session.id} value={session.id}>{new Date(session.createdAt).toLocaleString('zh-CN')}</option>)}
+            </select>
+          )}
           <div className="agent-mode" aria-label="问答模式">
             <button
               type="button"

@@ -8,6 +8,7 @@ import com.readingagent.dto.BookDtos.ChapterDetail;
 import com.readingagent.dto.BookDtos.ChapterSummary;
 import com.readingagent.dto.HighlightDtos.HighlightResponse;
 import com.readingagent.service.BookService;
+import com.readingagent.service.AgentMemoryService;
 import com.readingagent.service.HighlightService;
 import com.readingagent.service.RagService;
 import com.readingagent.agent.MultiAgentCoordinator;
@@ -25,13 +26,15 @@ public class ReadingAgentMcpTools {
     private final HighlightService highlightService;
     private final RagService ragService;
     private final MultiAgentCoordinator multiAgentCoordinator;
+    private final AgentMemoryService memoryService;
 
     public ReadingAgentMcpTools(BookService bookService, HighlightService highlightService, RagService ragService,
-                                MultiAgentCoordinator multiAgentCoordinator) {
+                                MultiAgentCoordinator multiAgentCoordinator, AgentMemoryService memoryService) {
         this.bookService = bookService;
         this.highlightService = highlightService;
         this.ragService = ragService;
         this.multiAgentCoordinator = multiAgentCoordinator;
+        this.memoryService = memoryService;
     }
 
     @Tool(name = "list_books", description = "列出 ReadingAgent 本地书架中的全部书籍及其 ID、作者和章节数量")
@@ -71,17 +74,41 @@ public class ReadingAgentMcpTools {
     @Tool(name = "ask_book", description = "基于指定书籍的 RAG 索引调用大模型回答问题，并返回引用片段")
     public AskResponse askBook(
             @ToolParam(description = "书籍 ID") Long bookId,
-            @ToolParam(description = "要询问的问题") String question) {
+            @ToolParam(description = "要询问的问题") String question,
+            @ToolParam(description = "用户标识；提供后启用持久化记忆", required = false) String userKey,
+            @ToolParam(description = "已有会话 ID；为空时创建新会话", required = false) String sessionId) {
         requireText(question, "问题不能为空");
-        return ragService.ask(bookService.getBook(bookId), null, question);
+        var book = bookService.getBook(bookId);
+        if (userKey == null) {
+            return ragService.ask(book, null, question);
+        }
+        var context = memoryService.context(book, userKey, sessionId);
+        var response = ragService.ask(book, null, question, context.text());
+        String savedId = memoryService.saveExchange(book, userKey, context.sessionId(), question, response.answer(), "quick");
+        if (!response.sources().isEmpty()) {
+            memoryService.updateLongTermMemory(book, userKey, question, response.answer());
+        }
+        return new AskResponse(response.answer(), response.sources(), savedId);
     }
 
     @Tool(name = "analyze_book", description = "使用检索、分析和审校 Multi Agent 工作流深度分析指定书籍中的复杂问题")
     public MultiAgentResponse analyzeBook(
             @ToolParam(description = "书籍 ID") Long bookId,
-            @ToolParam(description = "需要跨章节分析、比较或论证的问题") String question) {
+            @ToolParam(description = "需要跨章节分析、比较或论证的问题") String question,
+            @ToolParam(description = "用户标识；提供后启用持久化记忆", required = false) String userKey,
+            @ToolParam(description = "已有会话 ID；为空时创建新会话", required = false) String sessionId) {
         requireText(question, "问题不能为空");
-        return multiAgentCoordinator.analyze(bookService.getBook(bookId), question);
+        var book = bookService.getBook(bookId);
+        if (userKey == null) {
+            return multiAgentCoordinator.analyze(book, question);
+        }
+        var context = memoryService.context(book, userKey, sessionId);
+        var response = multiAgentCoordinator.analyze(book, question, context.text());
+        String savedId = memoryService.saveExchange(book, userKey, context.sessionId(), question, response.answer(), "deep");
+        if (!response.sources().isEmpty()) {
+            memoryService.updateLongTermMemory(book, userKey, question, response.answer());
+        }
+        return new MultiAgentResponse(response.answer(), response.sources(), response.steps(), savedId);
     }
 
     @Tool(name = "list_highlights", description = "列出指定书籍中的全部划线和笔记")

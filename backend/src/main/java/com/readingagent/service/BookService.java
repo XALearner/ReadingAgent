@@ -24,17 +24,19 @@ public class BookService {
     private final ReadingProgressRepository readingProgressRepository;
     private final BookParser bookParser;
     private final RagService ragService;
+    private final AgentMemoryService memoryService;
 
     public BookService(BookRepository bookRepository, ChapterRepository chapterRepository,
                        HighlightRepository highlightRepository, ReadingProgressRepository readingProgressRepository,
                        BookParser bookParser,
-                       RagService ragService) {
+                       RagService ragService, AgentMemoryService memoryService) {
         this.bookRepository = bookRepository;
         this.chapterRepository = chapterRepository;
         this.highlightRepository = highlightRepository;
         this.readingProgressRepository = readingProgressRepository;
         this.bookParser = bookParser;
         this.ragService = ragService;
+        this.memoryService = memoryService;
     }
 
     @Transactional
@@ -93,6 +95,7 @@ public class BookService {
     @Transactional
     public void deleteBook(Long bookId) {
         Book book = getBook(bookId);
+        memoryService.deleteBookData(bookId);
         readingProgressRepository.deleteByBookId(bookId);
         highlightRepository.deleteByBookId(bookId);
         chapterRepository.deleteByBookId(bookId);

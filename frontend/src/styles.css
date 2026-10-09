@@ -127,6 +127,21 @@ button {
   margin: 0;
 }
 
+.chat-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.session-select {
+  background: #fff;
+  border: 1px solid #d7dee7;
+  border-radius: 6px;
+  color: #283746;
+  margin-bottom: 10px;
+  min-height: 34px;
+  width: 100%;
+}
+
 .book-list,
 .chapter-list,
 .chat-list,

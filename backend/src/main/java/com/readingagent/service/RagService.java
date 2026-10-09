@@ -18,6 +18,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.BeansException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -88,15 +89,27 @@ public class RagService {
     }
 
     public AskResponse ask(Book book, Long chapterId, String question) {
+        return ask(book, chapterId, question, "");
+    }
+
+    public AskResponse ask(Book book, Long chapterId, String question, String memoryContext) {
         VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
-        ChatClient.Builder chatBuilder = chatClientBuilderProvider.getIfAvailable();
+        ChatClient.Builder chatBuilder;
+        try {
+            chatBuilder = chatClientBuilderProvider.getIfAvailable();
+        } catch (BeansException ex) {
+            log.debug("Chat client is unavailable", ex);
+            chatBuilder = null;
+        }
         if (chatBuilder == null) {
             return new AskResponse("AI 问答还没有配置完成：请确认 DASHSCOPE_API_KEY 和 Elasticsearch 已启动。", List.of());
         }
 
-        List<SourceSnippet> sources = vectorSources(book, question, vectorStore);
+        String retrievalQuery = memoryContext.isBlank() ? question
+                : memoryContext.substring(Math.max(0, memoryContext.length() - 1000)) + "\n" + question;
+        List<SourceSnippet> sources = vectorSources(book, retrievalQuery, vectorStore);
         if (sources.isEmpty()) {
-            sources = fallbackSources(book, chapterId, question);
+            sources = fallbackSources(book, chapterId, retrievalQuery);
         }
 
         if (sources.isEmpty()) {
@@ -120,6 +133,7 @@ public class RagService {
                             如果书籍资料足够，请主要依据书籍资料回答，并尽量指出依据来自哪个章节。
                             如果书籍资料不足，可以结合你的通用知识补充回答，但要明确说明哪些内容来自书籍资料，哪些是补充推断或背景知识。
                             不要把书中没有的信息伪装成书里的内容。
+                            对话记忆仅用于理解用户意图，不是书籍证据。
                             回答要清晰、简洁。
                             """)
                     .user("""
@@ -128,8 +142,10 @@ public class RagService {
                             资料：
                             %s
 
+                            对话记忆：%s
+
                             用户问题：%s
-                            """.formatted(book.getTitle(), context, question))
+                            """.formatted(book.getTitle(), context, memoryContext, question))
                     .call()
                     .content();
         } catch (RuntimeException ex) {

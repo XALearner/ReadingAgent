@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import com.readingagent.agent.MultiAgentCoordinator;
 import com.readingagent.dto.BookDtos.ChapterDetail;
 import com.readingagent.service.BookService;
+import com.readingagent.service.AgentMemoryService;
 import com.readingagent.service.HighlightService;
 import com.readingagent.service.RagService;
 import java.util.Arrays;
@@ -28,12 +29,14 @@ class ReadingAgentMcpToolsTest {
     private RagService ragService;
     @Mock
     private MultiAgentCoordinator multiAgentCoordinator;
+    @Mock
+    private AgentMemoryService memoryService;
 
     private ReadingAgentMcpTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new ReadingAgentMcpTools(bookService, highlightService, ragService, multiAgentCoordinator);
+        tools = new ReadingAgentMcpTools(bookService, highlightService, ragService, multiAgentCoordinator, memoryService);
     }
 
     @Test

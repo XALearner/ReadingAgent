@@ -6,3 +6,6 @@ dist/
 .env
 *.log
 uploads/
+*.mv.db
+*.trace.db
+frontend/.npm-cache/

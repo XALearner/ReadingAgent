@@ -11,6 +11,7 @@
 - 划线和笔记
 - 基于 Elasticsearch VectorStore 的书籍问答接口
 - 检索、分析、审校协作的 Multi Agent 深度分析
+- 持久化会话消息与按用户、书籍保存的长期记忆摘要
 - 可供外部 AI 客户端调用的 MCP Server
 - Docker Compose 本地部署
 
@@ -106,6 +107,16 @@ docker compose exec backend printenv
 
 深度分析接口为 `POST /api/books/{bookId}/ai/analyze`。一次请求通常会调用两次聊天模型，分别生成分析草稿和审校后的最终答案，因此耗时和模型用量会高于快速问答。审校调用失败时会自动返回分析草稿。
 
+## 会话与长期记忆
+
+网页问答会把消息写入 `agent_sessions`、`agent_messages`，并在成功回答后更新
+`agent_memories`。同一用户、同一本书的新会话会读取长期摘要；最近 8 条消息用于当前
+会话上下文。网页可切换或删除会话。`GET /api/books/{bookId}/ai/memory` 可查看摘要，
+`DELETE /api/books/{bookId}/ai/memory` 可清除该用户在该书上的长期摘要。
+当前 `userKey` 由客户端提供，项目未接入登录鉴权。
+MCP 的 `ask_book`、`analyze_book` 可传 `userKey` 和可选的 `sessionId` 使用相同记忆；
+省略 `userKey` 时仍为独立的无状态请求。响应中的 `sessionId` 可用于下一次调用。
+
 ## MCP Server
 
 ReadingAgent 同时提供基于 SSE 的 MCP Server。MCP 只增加一个面向 AI Agent 的入口，不会替代网页使用的 REST API。
@@ -140,7 +151,7 @@ node scripts/mcp-smoke-test.mjs
 
 ## 不使用 Docker 的开发启动
 
-后端默认使用 H2 内存数据库：
+后端默认使用 H2 文件数据库，数据保存在 `backend/reading_agent.mv.db`；Docker 使用 MySQL：
 
 ```powershell
 cd backend

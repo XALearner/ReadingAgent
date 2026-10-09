@@ -26,8 +26,14 @@ public class MultiAgentCoordinator {
     }
 
     public MultiAgentResponse analyze(Book book, String question) {
+        return analyze(book, question, "");
+    }
+
+    public MultiAgentResponse analyze(Book book, String question, String memoryContext) {
         List<AgentStep> steps = new ArrayList<>();
-        List<SourceSnippet> sources = retrievalAgent.retrieve(book, question);
+        String retrievalQuery = memoryContext.isBlank() ? question
+                : memoryContext.substring(Math.max(0, memoryContext.length() - 1000)) + "\n" + question;
+        List<SourceSnippet> sources = retrievalAgent.retrieve(book, retrievalQuery);
         steps.add(new AgentStep("retrieval", "completed", "已找到 " + sources.size() + " 个相关书籍片段"));
 
         if (sources.isEmpty()) {
@@ -41,7 +47,8 @@ public class MultiAgentCoordinator {
 
         String draft;
         try {
-            draft = analysisAgent.analyze(book, question, sources);
+            draft = memoryContext.isBlank() ? analysisAgent.analyze(book, question, sources)
+                    : analysisAgent.analyze(book, question, sources, memoryContext);
             steps.add(new AgentStep("analysis", "completed", "已完成跨片段归纳并形成分析草稿"));
         } catch (RuntimeException ex) {
             log.warn("Analysis agent failed for book {}", book.getId(), ex);

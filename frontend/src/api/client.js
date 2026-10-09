@@ -29,6 +29,11 @@ export const api = {
   deleteBook: (bookId) => request(`/books/${bookId}`, { method: 'DELETE' }),
   listChapters: (bookId) => request(`/books/${bookId}/chapters`),
   getChapter: (chapterId) => request(`/books/chapters/${chapterId}`),
+  listSessions: (bookId, userKey) => request(`/books/${bookId}/ai/sessions?userKey=${encodeURIComponent(userKey)}`),
+  createSession: (bookId, userKey) => request(`/books/${bookId}/ai/sessions?userKey=${encodeURIComponent(userKey)}`, { method: 'POST' }),
+  listMessages: (bookId, sessionId, userKey) => request(`/books/${bookId}/ai/sessions/${sessionId}/messages?userKey=${encodeURIComponent(userKey)}`),
+  deleteSession: (bookId, sessionId, userKey) => request(`/books/${bookId}/ai/sessions/${sessionId}?userKey=${encodeURIComponent(userKey)}`, { method: 'DELETE' }),
+  clearMemory: (bookId, userKey) => request(`/books/${bookId}/ai/memory?userKey=${encodeURIComponent(userKey)}`, { method: 'DELETE' }),
   ask: (bookId, payload) =>
     request(`/books/${bookId}/ai/ask`, {
       method: 'POST',

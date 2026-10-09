@@ -16,6 +16,10 @@ public class AnalysisAgent {
     }
 
     public String analyze(Book book, String question, List<SourceSnippet> sources) {
+        return analyze(book, question, sources, "");
+    }
+
+    public String analyze(Book book, String question, List<SourceSnippet> sources, String memoryContext) {
         ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
         if (builder == null) {
             throw new IllegalStateException("大模型尚未配置");
@@ -28,15 +32,18 @@ public class AnalysisAgent {
                         先识别问题包含的子问题，再综合不同章节的信息回答。
                         只把证据明确支持的内容表述为书中结论；推断必须标注为推断。
                         在关键结论后标注对应章节名称。输出完整草稿，不要描述你的工作流程。
+                        对话记忆只用于理解问题，不可当作书籍证据。
                         """)
                 .user("""
                         书名：%s
 
                         用户问题：%s
 
+                        对话记忆：%s
+
                         书籍证据：
                         %s
-                        """.formatted(book.getTitle(), question, AgentContextFormatter.format(sources)))
+                        """.formatted(book.getTitle(), question, memoryContext, AgentContextFormatter.format(sources)))
                 .call()
                 .content();
         if (result == null || result.isBlank()) {
